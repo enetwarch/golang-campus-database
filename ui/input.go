@@ -25,12 +25,29 @@ func (input *Input) String(prompt string) string {
 func (input *Input) Int(prompt string, min, max int) int {
 	for {
 		fmt.Printf("%s", prompt)
-		input, _ := input.Reader.ReadString('\n')
-		parsed, err := strconv.Atoi(strings.TrimSpace(input))
+		userInput, _ := input.Reader.ReadString('\n')
+		parsed, err := strconv.Atoi(strings.TrimSpace(userInput))
 		if err != nil {
 			fmt.Printf("INPUT ERROR. Please enter a valid integer.\n")
 		} else if parsed < min || parsed > max {
 			fmt.Printf("INPUT ERROR. Please enter an integer between %d and %d.\n", min, max)
+		} else {
+			return parsed
+		}
+	}
+}
+
+// Float gets a float64 input from the user, validation included.
+// Same concept as the previous function but with the float64 data type.
+func (input *Input) Float(prompt string, min, max float64) float64 {
+	for {
+		fmt.Printf("%s", prompt)
+		userInput, _ := input.Reader.ReadString('\n')
+		parsed, err := strconv.ParseFloat(strings.TrimSpace(userInput), 64)
+		if err != nil {
+			fmt.Printf("INPUT ERROR. Please enter a valid decimal number.\n")
+		} else if parsed < min || parsed > max {
+			fmt.Printf("INPUT ERROR. Please enter a decimal number between %.2f and %.2f.\n", min, max)
 		} else {
 			return parsed
 		}

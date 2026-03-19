@@ -49,18 +49,52 @@ func main() {
 					primaryKey: "student_id",
 					columns:    []string{"student_id", "student_name", "block"},
 					create: func() []any {
-						studentID := in.Int("Student ID: ", 00000001, 99999999)
+						studentID := in.Int("Student ID: ", 1, 99999999)
 						studentName := in.String("Student Name: ")
 						block := in.String("Block: ")
 						return []any{studentID, studentName, block}
 					},
 					id: func() any {
-						return in.Int("Student ID: ", 00000001, 99999999)
+						return in.Int("Student ID: ", 1, 99999999)
 					},
 				})
 			}
+
 		case CourseTable:
+			{
+				table(db, in, &TableData{
+					menuName:   "Course",
+					tableName:  "course",
+					primaryKey: "course_id",
+					columns:    []string{"course_id", "course_name", "units"},
+					create: func() []any {
+						courseID := in.Int("Course ID: ", 1, 9999)
+						courseName := in.String("Course Name: ")
+						units := in.Float("Units: ", 0, 168)
+						return []any{courseID, courseName, units}
+					},
+					id: func() any {
+						return in.Int("Course ID: ", 1, 9999)
+					},
+				})
+			}
 		case ProfessorTable:
+			{
+				table(db, in, &TableData{
+					menuName:   "Professor",
+					tableName:  "professor",
+					primaryKey: "professor_id",
+					columns:    []string{"professor_id", "professor_name"},
+					create: func() []any {
+						courseID := in.Int("Professor ID: ", 1, 99999999)
+						courseName := in.String("Professor Name: ")
+						return []any{courseID, courseName}
+					},
+					id: func() any {
+						return in.Int("Professor ID: ", 1, 99999999)
+					},
+				})
+			}
 		case EnrollmentTable:
 		case ExitProgram:
 			fmt.Printf("Thank you for using our program!")

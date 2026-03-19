@@ -16,7 +16,7 @@ func (db *Database) InitializeTables() error {
 		);`,
 		`CREATE TABLE IF NOT EXISTS professor (
 			professor_id INTEGER PRIMARY KEY,
-			teacher_name TEXT
+			professor_name TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS enrollments (
 			student_id INTEGER, FOREIGN KEY(student_id) REFERENCES student(student_id),
