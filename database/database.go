@@ -7,7 +7,7 @@ type Database struct {
 	SQL *sql.DB
 }
 
-func (db *Database) ExecuteQueries(queries ...string) error {
+func (db *Database) Execute(queries ...string) error {
 	for _, query := range queries {
 		_, err := db.SQL.Exec(query)
 		if err != nil {
@@ -17,8 +17,32 @@ func (db *Database) ExecuteQueries(queries ...string) error {
 	return nil
 }
 
+func (db *Database) Query(query string) (*sql.Rows, error) {
+	return db.SQL.Query(query)
+}
+
+func StringifyRows(rows *sql.Rows, columns int) ([][]string, error) {
+	var table [][]string
+	for rows.Next() {
+		column := make([]string, columns)
+		destination := make([]any, columns)
+		for i := range column {
+			destination[i] = &column[i]
+		}
+		err := rows.Scan(destination...)
+		if err != nil {
+			return nil, err
+		}
+		table = append(table, column)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return table, nil
+}
+
 func (db *Database) InitializeTables() error {
-	return db.ExecuteQueries(
+	return db.Execute(
 		`CREATE TABLE IF NOT EXISTS student (
 			student_id INTEGER PRIMARY KEY,
 			student_name TEXT,
@@ -42,7 +66,7 @@ func (db *Database) InitializeTables() error {
 }
 
 func (db *Database) InitializeExampleRows() error {
-	return db.ExecuteQueries(
+	return db.Execute(
 		"INSERT OR IGNORE INTO student VALUES (20000001, 'Duya, Arman D.', 'CS-201')",
 		"INSERT OR IGNORE INTO student VALUES (20000002, 'Espinosa, Lord Raizen I.', 'CS-201')",
 		"INSERT OR IGNORE INTO student VALUES (20000003, 'Molina, Hugo P.', 'CS-201')",
