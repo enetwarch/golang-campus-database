@@ -2,20 +2,19 @@ package main
 
 import (
 	"bufio"
+	"diproglang/input"
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
 )
 
 // Main entry point and menu of the program.
 func main() {
+	input := input.Input{Reader: bufio.NewReader(os.Stdin)}
 	studentDatabase := StudentDatabase{students: []Student{}}
 	fmt.Printf("Student database initialized.\n")
 
 	for {
-		fmt.Printf("Press enter to proceed. ")
-		reader.ReadString('\n')
+		input.Buffer()
 		fmt.Printf("\n")
 		fmt.Printf("1. Add Student\n")
 		fmt.Printf("2. Edit Student\n")
@@ -24,14 +23,14 @@ func main() {
 		fmt.Printf("5. Print Students\n")
 		fmt.Printf("0. Exit Program\n")
 
-		action := inputInt("Enter action (1/2/3/4/5/0): ", 0, 5)
+		action := input.Int("Enter action (1/2/3/4/5/0): ", 0, 5)
 		index := -1
 		switch action {
 		case 0:
 			fmt.Printf("Thank you for using our program!\n")
 			return
 		case 2, 3, 4:
-			number := inputInt("Student Number: ", 0, 99999999)
+			number := input.Int("Student Number: ", 0, 99999999)
 			index = studentDatabase.searchStudent(number)
 			if index == -1 {
 				fmt.Printf("Student not found.\n")
@@ -41,10 +40,10 @@ func main() {
 
 		switch action {
 		case 1:
-			studentDatabase.addStudent(inputStudent())
+			studentDatabase.addStudent(inputStudent(input))
 			fmt.Printf("Student successfully added to the database.\n")
 		case 2:
-			studentDatabase.editStudent(index, inputStudent())
+			studentDatabase.editStudent(index, inputStudent(input))
 			fmt.Printf("Student edited successfully.\n")
 		case 3:
 			fmt.Printf("Student information found.\n")
@@ -106,40 +105,10 @@ func (sdb *StudentDatabase) printStudent(index int) {
 }
 
 // Helper function to get user input on student data.
-func inputStudent() Student {
+func inputStudent(input input.Input) Student {
 	return Student{
-		number:     inputInt("Student Number: ", 0, 99999999),
-		name:       inputString("Name: "),
-		department: inputString("Department: "),
-	}
-}
-
-// Reusable scanner for helper input functions.
-var reader = bufio.NewReader(os.Stdin)
-
-// A simple helper function that gets the user string input after they press enter.
-func inputString(prompt string) string {
-	fmt.Printf("%s", prompt)
-	input, _ := reader.ReadString('\n')
-	return strings.TrimSpace(input)
-}
-
-// Helper function to easily get user integer input with validation.
-// When the user hits enter, the string input will be parsed into an integer.
-// If it cannot be parsed into an integer or the integer is outside min and max, print input error.
-// Otherwise, the parsed integer will be returned like normal.
-func inputInt(prompt string, min, max int) int {
-	for {
-		fmt.Printf("%s", prompt)
-		input, _ := reader.ReadString('\n')
-		parsed, err := strconv.Atoi(strings.TrimSpace(input))
-
-		if err != nil {
-			fmt.Printf("INPUT ERROR. Please enter a valid integer.\n")
-		} else if parsed < min || parsed > max {
-			fmt.Printf("INPUT ERROR. Please enter an integer between %d and %d.\n", min, max)
-		} else {
-			return parsed
-		}
+		number:     input.Int("Student Number: ", 0, 99999999),
+		name:       input.String("Name: "),
+		department: input.String("Department: "),
 	}
 }
