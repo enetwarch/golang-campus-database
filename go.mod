@@ -1,3 +1,3 @@
-module diproglang
+module campus
 
 go 1.26.1
