@@ -8,7 +8,8 @@ import (
 )
 
 type Database struct {
-	SQL *sql.DB
+	SQL    *sql.DB
+	Tables []*Table
 }
 
 func (db *Database) Execute(queries ...string) error {
@@ -21,7 +22,37 @@ func (db *Database) Execute(queries ...string) error {
 	return nil
 }
 
-// Initialize executes an initialize table query like this.
+const ( // Enums for type-safe index access.
+	StudentTableIndex    = 0
+	CourseTableIndex     = 1
+	ProfessorTableIndex  = 2
+	EnrollmentTableIndex = 3
+)
+
+func InitializeDatabase() (*Database, error) {
+	sqlite, err := sql.Open("sqlite", "campus.db")
+	if err != nil {
+		return nil, err
+	}
+	if _, err := sqlite.Exec("PRAGMA foreign_keys = ON;"); err != nil {
+		return nil, err
+	}
+
+	student := StudentTable()
+	course := CourseTable()
+	professor := ProfessorTable()
+	enrollment := EnrollmentTable(student, course, professor)
+	database := Database{
+		SQL:    sqlite,
+		Tables: []*Table{student, course, professor, enrollment},
+	}
+	for _, table := range database.Tables {
+		database.InitializeTable(table)
+	}
+	return &database, nil
+}
+
+// InitializeTable executes an initialize table query like this.
 /*
 	CREATE TABLE IF NOT EXISTS enrollments (
 		student_id INTEGER,
@@ -33,7 +64,7 @@ func (db *Database) Execute(queries ...string) error {
 		FOREIGN KEY (student_id) REFERENCES student(student_id)
 	);
 */
-func (db *Database) Initialize(table *Table) error {
+func (db *Database) InitializeTable(table *Table) error {
 	hasPK := len(table.PrimaryKeys) > 0
 	hasFK := len(table.ForeignKeys) > 0
 	var query strings.Builder
@@ -108,6 +139,13 @@ func (db *Database) Edit(table *Table, pkValues []any, values []any) (sql.Result
 	// WHERE {pkcolumn1} = ? AND {pkcolumn2} = ? AND ...;
 	// Both UPDATE... and WHERE... are still in the same query.
 	return db.SQL.Exec(query.String(), append(values, pkValues...)...)
+}
+
+func (db *Database) View(table *Table) (*sql.Rows, error) {
+	var query strings.Builder
+	fmt.Fprintf(&query, "SELECT * FROM %s;", table.TableName)
+	// SELECT * FROM {tablename};
+	return db.SQL.Query(query.String())
 }
 
 func (db *Database) Search(table *Table, pkValues []any) (*sql.Rows, error) {

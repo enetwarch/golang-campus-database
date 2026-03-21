@@ -4,203 +4,193 @@ import (
 	"bufio"
 	"campus/db"
 	"campus/ui"
-	"database/sql"
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	_ "modernc.org/sqlite" // sql driver
 )
 
+const ( // Makeshift Golang enums for switch case readability.
+	StudentTable    = 1
+	CourseTable     = 2
+	ProfessorTable  = 3
+	EnrollmentTable = 4
+	ExitProgram     = 0
+)
+
 func main() {
-	sqliteDB, err := sql.Open("sqlite", "campus.db")
+	programName := "Golang Campus Database"
+	fmt.Printf("Welcome to %s!\n", programName)
+	database, err := db.InitializeDatabase()
 	if err != nil {
 		log.Fatal(err)
 	}
-	if _, err := sqliteDB.Exec("PRAGMA foreign_keys = ON;"); err != nil {
-		log.Fatal(err)
-	}
-	db := db.Database{SQL: sqliteDB}
-	defer db.SQL.Close()
-	db.InitializeTables()
-	db.InitializeExampleRows()
+	defer database.SQL.Close()
 	fmt.Printf("Database Initialized...\n")
+	input := ui.Input{Reader: bufio.NewReader(os.Stdin)}
+	input.Buffer()
+	fmt.Printf("\n")
 
-	in := ui.Input{Reader: bufio.NewReader(os.Stdin)}
-	const ( // Makeshift Golang enums for switch case readability.
-		StudentTable    = 1
-		CourseTable     = 2
-		ProfessorTable  = 3
-		EnrollmentTable = 4
-		ExitProgram     = 0
-	)
 	for {
-		ui.PrintTable([][]string{
-			{"1", "Student Table"},
-			{"2", "Course Table"},
-			{"3", "Professor Table"},
-			{"4", "Enrollment Table"},
-			{"0", "Exit Program"},
-		})
-		switch in.Int("Enter Action (0/1/2/3/4): ", 0, 4) {
+		fmt.Printf("[1] Student Table\n")
+		fmt.Printf("[2] Course Table\n")
+		fmt.Printf("[3] Professor Table\n")
+		fmt.Printf("[4] Enrollment Table\n")
+		fmt.Printf("[0] Exit Program\n")
+		action := input.Int("Enter Action (0/1/2/3/4): ", 0, 4)
+		fmt.Printf("\n")
+
+		switch action {
 		case StudentTable:
-			{
-				table(db, in, &TableData{
-					menuName:   "Student",
-					tableName:  "student",
-					primaryKey: "student_id",
-					columns:    []string{"student_id", "student_name", "block"},
-					create: func() []any {
-						studentID := in.Int("Student ID: ", 1, 99999999)
-						studentName := in.String("Student Name: ")
-						block := in.String("Block: ")
-						return []any{studentID, studentName, block}
-					},
-					id: func() any {
-						return in.Int("Student ID: ", 1, 99999999)
-					},
-				})
-			}
+			handleTable(&input, database, database.Tables[db.StudentTableIndex], Methods{
+				inputValues: func() []any {
+					studentID := input.Int("Student ID: ", 1, 99999999)
+					studentName := input.String("Student Name: ")
+					block := input.String("Block: ")
+					return []any{studentID, studentName, block}
+				},
+				inputPrimaryKeys: func() []any {
+					studentID := input.Int("Student ID: ", 1, 99999999)
+					return []any{studentID}
+				},
+			})
 
 		case CourseTable:
-			{
-				table(db, in, &TableData{
-					menuName:   "Course",
-					tableName:  "course",
-					primaryKey: "course_id",
-					columns:    []string{"course_id", "course_name", "units"},
-					create: func() []any {
-						courseID := in.Int("Course ID: ", 1, 9999)
-						courseName := in.String("Course Name: ")
-						units := in.Float("Units: ", 0, 168)
-						return []any{courseID, courseName, units}
-					},
-					id: func() any {
-						return in.Int("Course ID: ", 1, 9999)
-					},
-				})
-			}
+			handleTable(&input, database, database.Tables[db.CourseTableIndex], Methods{
+				inputValues: func() []any {
+					courseID := input.Int("Course ID: ", 1, 9999)
+					courseName := input.String("Course Name: ")
+					units := input.Float("Units: ", 0, 168) // There's only 168 hours max in a week.
+					return []any{courseID, courseName, units}
+				},
+				inputPrimaryKeys: func() []any {
+					courseID := input.Int("Course ID: ", 1, 9999)
+					return []any{courseID}
+				},
+			})
+
 		case ProfessorTable:
-			{
-				table(db, in, &TableData{
-					menuName:   "Professor",
-					tableName:  "professor",
-					primaryKey: "professor_id",
-					columns:    []string{"professor_id", "professor_name"},
-					create: func() []any {
-						courseID := in.Int("Professor ID: ", 1, 99999999)
-						courseName := in.String("Professor Name: ")
-						return []any{courseID, courseName}
-					},
-					id: func() any {
-						return in.Int("Professor ID: ", 1, 99999999)
-					},
-				})
-			}
+			handleTable(&input, database, database.Tables[db.ProfessorTableIndex], Methods{
+				inputValues: func() []any {
+					professorID := input.Int("Professor ID: ", 1, 99999999)
+					professorName := input.String("Professor Name: ")
+					return []any{professorID, professorName}
+				},
+				inputPrimaryKeys: func() []any {
+					professorID := input.Int("Professor ID: ", 1, 99999999)
+					return []any{professorID}
+				},
+			})
+
 		case EnrollmentTable:
+			handleTable(&input, database, database.Tables[db.EnrollmentTableIndex], Methods{
+				inputValues: func() []any {
+					studentID := input.Int("Student ID: ", 1, 99999999)
+					courseID := input.Int("Course ID: ", 1, 9999)
+					professorID := input.Int("Professor ID: ", 1, 99999999)
+					return []any{studentID, courseID, professorID}
+				},
+				inputPrimaryKeys: func() []any {
+					studentID := input.Int("Student ID: ", 1, 99999999)
+					courseID := input.Int("Course ID: ", 1, 9999)
+					return []any{studentID, courseID}
+				},
+			})
+
 		case ExitProgram:
-			fmt.Printf("Thank you for using our program!")
-			return
+			fmt.Printf("Thank you for using %s!", programName)
+			os.Exit(0)
 		}
+		fmt.Printf("\n")
 	}
 }
 
-type TableData struct {
-	menuName   string
-	tableName  string
-	primaryKey string
-	columns    []string
-	create     func() []any
-	id         func() any
+type Methods struct {
+	inputValues      func() []any
+	inputPrimaryKeys func() []any
 }
 
-func table(database db.Database, in ui.Input, td *TableData) {
-	const ( // Makeshift Golang enums for switch case readability.
-		AddRow    = 1
-		ViewTable = 2
-		EditRow   = 3
-		DeleteRow = 4
-		ExitTable = 0
-	)
+const ( // Makeshift Golang enums for switch case readability.
+	AddRow    = 1
+	ViewTable = 2
+	EditRow   = 3
+	DeleteRow = 4
+	ExitTable = 0
+)
 
+func handleTable(input *ui.Input, database *db.Database, table *db.Table, methods Methods) {
 	for {
-		ui.PrintTable([][]string{
-			{"1", fmt.Sprintf("Add %s", td.menuName)},
-			{"2", fmt.Sprintf("View %ss", td.menuName)},
-			{"3", fmt.Sprintf("Edit %s", td.menuName)},
-			{"4", fmt.Sprintf("Delete %s", td.menuName)},
-			{"0", "Exit Table"},
-		})
+		fmt.Printf("Currently in %s table.\n", table.TableName)
+		fmt.Printf("[1] Add Record\n")
+		fmt.Printf("[2] View Record\n")
+		fmt.Printf("[3] Edit Record\n")
+		fmt.Printf("[4] Delete Record\n")
+		fmt.Printf("[0] Exit Table\n")
 
-		switch in.Int("Enter Action (0/1/2/3/4): ", 0, 4) {
+		switch input.Int("Enter Action (0/1/2/3/4): ", 0, 4) {
 		case AddRow:
-			{
-				insert := fmt.Sprintf("INSERT INTO %s (%s)", td.tableName, strings.Join(td.columns, ", "))
-				placeholders := strings.Split(strings.Repeat("?", len(td.columns)), "")
-				values := fmt.Sprintf("VALUES (%s)", strings.Join(placeholders, ", "))
-				query := fmt.Sprintf("%s %s", insert, values)
-				_, err := database.SQL.Exec(query, td.create()...)
-				if err != nil {
-					log.Fatal(err)
-				}
+			fmt.Printf("Insert a record to %s table.\n", table.TableName)
+			valuesToInsert := methods.inputValues()
+			result, err := database.Insert(table, valuesToInsert)
+			if err != nil {
+				log.Fatal(err)
+			} else if affected, err := result.RowsAffected(); err != nil {
+				log.Fatal(err)
+			} else if affected == 0 {
+				fmt.Printf("Record with primary key already exists in %s table.\n", table.TableName)
+			} else {
+				fmt.Printf("Successfully inserted record to %s table!\n", table.TableName)
 			}
 
 		case ViewTable:
-			{
-				rows, err := database.SQL.Query(fmt.Sprintf("SELECT * FROM %s", td.tableName))
-				if err != nil {
-					log.Fatal(err)
-				}
-				defer rows.Close()
-				table, err := db.StringifyRows(rows, len(td.columns))
-				if err != nil {
-					log.Fatal(err)
-				}
-				ui.PrintTable(append([][]string{td.columns}, table...))
+			fmt.Printf("View all record in %s table.\n", table.TableName)
+			rows, err := database.View(table)
+			if err != nil {
+				log.Fatal(err)
 			}
+			defer rows.Close()
+			stringifiedRows, err := db.StringifyRows(rows, len(table.Columns))
+			if err != nil {
+				log.Fatal(err)
+			}
+			ui.PrintTable(append([][]string{table.ColumnNames()}, stringifiedRows...))
 
 		case EditRow:
-			{
-				id := td.id()
-				rows, _ := database.SQL.Query(fmt.Sprintf("SELECT * FROM %s", td.tableName))
-				if !rows.Next() { // If inputted ID is not in the table.
-					fmt.Printf("No %s found with ID %v.\n", td.tableName, id)
-					break
-				} else {
-					fmt.Printf("%s with ID %v found.\n", td.menuName, id)
-				}
-				rows.Close()
-				queryArguments := append(td.create(), id)
-				query := fmt.Sprintf("Update %s SET ", td.tableName)
-				for _, column := range td.columns {
-					query += fmt.Sprintf("%s = ?, ", column)
-				}
-				query = query[:len(query)-2] // Truncate the last 2 characters to remove ", "
-				query += fmt.Sprintf("WHERE %s = ?", td.primaryKey)
-				_, err := database.SQL.Exec(query, queryArguments...)
-				if err != nil {
-					log.Fatal(err)
-				}
+			fmt.Printf("Edit a record in %s table.\n", table.TableName)
+			primaryKeysToEdit := methods.inputPrimaryKeys()
+			fmt.Printf("Input new values for the record.\n")
+			valuesToReplaceEdit := methods.inputValues()
+			result, err := database.Edit(table, primaryKeysToEdit, valuesToReplaceEdit)
+			if err != nil {
+				log.Fatal(err)
+			} else if affected, err := result.RowsAffected(); err != nil {
+				log.Fatal(err)
+			} else if affected == 0 {
+				fmt.Printf("Record to edit not found in %s table.\n", table.TableName)
+			} else {
+				fmt.Printf("Successfully edited record in %s table!\n", table.TableName)
 			}
 
 		case DeleteRow:
-			{
-				id := td.id()
-				query := fmt.Sprintf("DELETE FROM %s WHERE %s = ?", td.tableName, td.primaryKey)
-				result, _ := database.SQL.Exec(query, id)
-				rowsAffected, _ := result.RowsAffected()
-				if rowsAffected == 0 {
-					fmt.Printf("No %s found with ID %v.\n", td.tableName, id)
-				} else {
-					fmt.Printf("Successfully deleted %s with ID %v.\n", td.tableName, id)
-				}
+			fmt.Printf("Delete a record in %s table.\n", table.TableName)
+			primaryKeysToDelete := methods.inputPrimaryKeys()
+			result, err := database.Delete(table, primaryKeysToDelete)
+			if err != nil {
+				log.Fatal(err)
+			} else if affected, err := result.RowsAffected(); err != nil {
+				log.Fatal(err)
+			} else if affected == 0 {
+				fmt.Printf("Record to delete not found in %s table.\n", table.TableName)
+			} else {
+				fmt.Printf("Record successfully deleted in %s table!\n", table.TableName)
 			}
 
 		case ExitTable:
-			fmt.Printf("Exiting %s table.\n", td.tableName)
+			fmt.Printf("Exiting %s table.\n", table.TableName)
 			return
 		}
-		in.Buffer()
+		input.Buffer()
+		fmt.Printf("\n")
 	}
 }
