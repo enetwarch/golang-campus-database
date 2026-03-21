@@ -11,6 +11,14 @@ func (table *Table) ColumnNames() []string {
 	return columnNames
 }
 
+func (table *Table) PKColumnNames() []string {
+	pkColumnNames := make([]string, len(table.PrimaryKeys))
+	for i := range table.PrimaryKeys {
+		pkColumnNames[i] = table.PrimaryKeys[i].ColumnName
+	}
+	return pkColumnNames
+}
+
 func StringifyRows(rows *sql.Rows, columns int) ([][]string, error) {
 	var table [][]string
 	for rows.Next() {
