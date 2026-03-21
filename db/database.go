@@ -12,16 +12,6 @@ type Database struct {
 	Tables []*Table
 }
 
-func (db *Database) Execute(queries ...string) error {
-	for _, query := range queries {
-		_, err := db.SQL.Exec(query)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 const ( // Enums for type-safe index access.
 	StudentTableIndex    = 0
 	CourseTableIndex     = 1
