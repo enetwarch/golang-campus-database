@@ -1,5 +1,5 @@
-// Package database contains functions that handles sqlite queries.
-package database
+// Package db contains functions that handles sqlite queries.
+package db
 
 // Table struct for easier manipulation of SQL tables during runtime.
 type Table struct {

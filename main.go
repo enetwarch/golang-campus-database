@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	"campus/database"
+	"campus/db"
 	"campus/ui"
 	"database/sql"
 	"fmt"
@@ -18,7 +18,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	db := database.Database{SQL: sqliteDB}
+	if _, err := sqliteDB.Exec("PRAGMA foreign_keys = ON;"); err != nil {
+		log.Fatal(err)
+	}
+	db := db.Database{SQL: sqliteDB}
 	defer db.SQL.Close()
 	db.InitializeTables()
 	db.InitializeExampleRows()
@@ -112,7 +115,7 @@ type TableData struct {
 	id         func() any
 }
 
-func table(db database.Database, in ui.Input, td *TableData) {
+func table(database db.Database, in ui.Input, td *TableData) {
 	const ( // Makeshift Golang enums for switch case readability.
 		AddRow    = 1
 		ViewTable = 2
@@ -137,7 +140,7 @@ func table(db database.Database, in ui.Input, td *TableData) {
 				placeholders := strings.Split(strings.Repeat("?", len(td.columns)), "")
 				values := fmt.Sprintf("VALUES (%s)", strings.Join(placeholders, ", "))
 				query := fmt.Sprintf("%s %s", insert, values)
-				_, err := db.SQL.Exec(query, td.create()...)
+				_, err := database.SQL.Exec(query, td.create()...)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -145,12 +148,12 @@ func table(db database.Database, in ui.Input, td *TableData) {
 
 		case ViewTable:
 			{
-				rows, err := db.SQL.Query(fmt.Sprintf("SELECT * FROM %s", td.tableName))
+				rows, err := database.SQL.Query(fmt.Sprintf("SELECT * FROM %s", td.tableName))
 				if err != nil {
 					log.Fatal(err)
 				}
 				defer rows.Close()
-				table, err := database.StringifyRows(rows, len(td.columns))
+				table, err := db.StringifyRows(rows, len(td.columns))
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -160,7 +163,7 @@ func table(db database.Database, in ui.Input, td *TableData) {
 		case EditRow:
 			{
 				id := td.id()
-				rows, _ := db.SQL.Query(fmt.Sprintf("SELECT * FROM %s", td.tableName))
+				rows, _ := database.SQL.Query(fmt.Sprintf("SELECT * FROM %s", td.tableName))
 				if !rows.Next() { // If inputted ID is not in the table.
 					fmt.Printf("No %s found with ID %v.\n", td.tableName, id)
 					break
@@ -175,7 +178,7 @@ func table(db database.Database, in ui.Input, td *TableData) {
 				}
 				query = query[:len(query)-2] // Truncate the last 2 characters to remove ", "
 				query += fmt.Sprintf("WHERE %s = ?", td.primaryKey)
-				_, err := db.SQL.Exec(query, queryArguments...)
+				_, err := database.SQL.Exec(query, queryArguments...)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -185,7 +188,7 @@ func table(db database.Database, in ui.Input, td *TableData) {
 			{
 				id := td.id()
 				query := fmt.Sprintf("DELETE FROM %s WHERE %s = ?", td.tableName, td.primaryKey)
-				result, _ := db.SQL.Exec(query, id)
+				result, _ := database.SQL.Exec(query, id)
 				rowsAffected, _ := result.RowsAffected()
 				if rowsAffected == 0 {
 					fmt.Printf("No %s found with ID %v.\n", td.tableName, id)

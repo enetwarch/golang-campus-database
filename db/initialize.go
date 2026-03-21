@@ -1,5 +1,5 @@
-// Package database contains functions that handles sqlite queries.
-package database
+// Package db contains functions that handles sqlite queries.
+package db
 
 // InitializeTables creates the table in the db if it does not exist yet.
 func (db *Database) InitializeTables() error {
