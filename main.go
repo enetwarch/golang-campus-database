@@ -123,7 +123,7 @@ func handleTable(input *ui.Input, database *db.Database, table *db.Table, method
 	for {
 		fmt.Printf("Currently in %s table.\n", table.TableName)
 		fmt.Printf("[1] Add Record\n")
-		fmt.Printf("[2] View Record\n")
+		fmt.Printf("[2] View Records\n")
 		fmt.Printf("[3] Edit Record\n")
 		fmt.Printf("[4] Delete Record\n")
 		fmt.Printf("[0] Exit Table\n")
@@ -134,9 +134,9 @@ func handleTable(input *ui.Input, database *db.Database, table *db.Table, method
 			valuesToInsert := methods.inputValues()
 			result, err := database.Insert(table, valuesToInsert)
 			if err != nil {
-				log.Fatal(err)
+				fmt.Printf("INSERT RECORD ERROR. %v\n", err)
 			} else if affected, err := result.RowsAffected(); err != nil {
-				log.Fatal(err)
+				fmt.Printf("ROW AFFECTED ERROR. %v\n", err)
 			} else if affected == 0 {
 				fmt.Printf("Record with primary key already exists in %s table.\n", table.TableName)
 			} else {
@@ -147,7 +147,7 @@ func handleTable(input *ui.Input, database *db.Database, table *db.Table, method
 			fmt.Printf("View all record in %s table.\n", table.TableName)
 			rows, err := database.View(table)
 			if err != nil {
-				log.Fatal(err)
+				fmt.Printf("VIEW TABLE ERROR. %v\n", err)
 			}
 			defer rows.Close()
 			stringifiedRows, err := db.StringifyRows(rows, len(table.Columns))
@@ -163,9 +163,9 @@ func handleTable(input *ui.Input, database *db.Database, table *db.Table, method
 			valuesToReplaceEdit := methods.inputValues()
 			result, err := database.Edit(table, primaryKeysToEdit, valuesToReplaceEdit)
 			if err != nil {
-				log.Fatal(err)
+				fmt.Printf("EDIT RECORD ERROR. %v\n", err)
 			} else if affected, err := result.RowsAffected(); err != nil {
-				log.Fatal(err)
+				fmt.Printf("ROW AFFECTED ERROR. %v\n", err)
 			} else if affected == 0 {
 				fmt.Printf("Record to edit not found in %s table.\n", table.TableName)
 			} else {
@@ -177,9 +177,9 @@ func handleTable(input *ui.Input, database *db.Database, table *db.Table, method
 			primaryKeysToDelete := methods.inputPrimaryKeys()
 			result, err := database.Delete(table, primaryKeysToDelete)
 			if err != nil {
-				log.Fatal(err)
+				fmt.Printf("DELETE RECORD ERROR. %v\n", err)
 			} else if affected, err := result.RowsAffected(); err != nil {
-				log.Fatal(err)
+				fmt.Printf("ROW AFFECTED ERROR. %v\n", err)
 			} else if affected == 0 {
 				fmt.Printf("Record to delete not found in %s table.\n", table.TableName)
 			} else {
